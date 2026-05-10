@@ -62,6 +62,8 @@ export function RecommendationPage() {
         crop: crop.name,
         soilType: crop.soilType,
         season: getSeason(),
+        farmId: fId,
+        cropId: cId,
       });
       setRecommendation(rec);
     } catch (err: unknown) {

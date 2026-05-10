@@ -6,6 +6,8 @@ export interface RecommendationRequest {
   crop: string;
   soilType: string;
   season: string;
+  farmId?: number;
+  cropId?: number;
 }
 
 export interface WeatherData {
