@@ -41,8 +41,10 @@ export function ReportsPage() {
         farms.map(async (farm) => {
           try {
             const recs = await getFarmRecommendations(farm.id);
+            console.log(`Farm "${farm.name}" (id=${farm.id}): ${recs.length} recommendations`);
             return recs.map((r) => ({ ...r, farmName: farm.name }));
-          } catch {
+          } catch (e) {
+            console.error(`Failed to load recommendations for farm "${farm.name}" (id=${farm.id}):`, e);
             return [];
           }
         })
