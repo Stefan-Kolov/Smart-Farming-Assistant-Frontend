@@ -209,6 +209,13 @@ export function FarmDetailsPage() {
                           >
                             Get AI Recommendation
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/dashboard/edit-crop/${crop.id}`)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteCrop(crop.id, crop.name)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>

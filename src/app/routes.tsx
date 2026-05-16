@@ -6,6 +6,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { FarmDetailsPage } from "./pages/FarmDetailsPage";
 import { AddFarmPage } from "./pages/AddFarmPage";
 import { AddCropPage } from "./pages/AddCropPage";
+import { EditFarmPage } from "./pages/EditFarmPage";
+import { EditCropPage } from "./pages/EditCropPage";
 import { RecommendationPage } from "./pages/RecommendationPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -44,6 +46,14 @@ export const router = createBrowserRouter([
       {
         path: "add-crop/:farmId",
         Component: AddCropPage,
+      },
+      {
+        path: "edit-farm/:farmId",
+        Component: EditFarmPage,
+      },
+      {
+        path: "edit-crop/:cropId",
+        Component: EditCropPage,
       },
       {
         path: "recommend/:farmId/:cropId",

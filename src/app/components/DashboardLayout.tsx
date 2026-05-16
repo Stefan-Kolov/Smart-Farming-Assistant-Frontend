@@ -1,16 +1,18 @@
-import { Link, Outlet, useNavigate, useLocation } from "react-router";
-import { Bell, LayoutDashboard, Sprout, Brain, FileText, User, LogOut, Menu } from "lucide-react";
+import { Link, Outlet, useLocation } from "react-router";
+import { LayoutDashboard, Sprout, Brain, FileText, User, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Badge } from "./ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetHeader } from "./ui/sheet";
+import { useAuth } from "../context/AuthContext";
 
 export function DashboardLayout() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    navigate("/");
-  };
+  const initials = user
+    ? `${user.name?.[0] ?? ''}${user.surname?.[0] ?? ''}`.toUpperCase()
+    : '?';
+  const fullName = user ? `${user.name} ${user.surname}` : 'User';
+  const email = user?.email ?? '';
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", id: "dashboard" },
@@ -65,15 +67,15 @@ export function DashboardLayout() {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-3">
             <Avatar>
-              <AvatarFallback className="bg-primary text-white">JD</AvatarFallback>
+              <AvatarFallback className="bg-primary text-white">{initials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">John Doe</p>
-              <p className="text-xs text-gray-500 truncate">john@example.com</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{fullName}</p>
+              <p className="text-xs text-gray-500 truncate">{email}</p>
             </div>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={logout}
             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <LogOut className="w-4 h-4" />
@@ -144,15 +146,15 @@ export function DashboardLayout() {
                     <div className="p-4 border-t border-gray-200">
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar>
-                          <AvatarFallback className="bg-primary text-white">JD</AvatarFallback>
+                          <AvatarFallback className="bg-primary text-white">{initials}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">John Doe</p>
-                          <p className="text-xs text-gray-500 truncate">john@example.com</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{fullName}</p>
+                          <p className="text-xs text-gray-500 truncate">{email}</p>
                         </div>
                       </div>
                       <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
@@ -168,10 +170,12 @@ export function DashboardLayout() {
                   {location.pathname === "/dashboard" && "Dashboard"}
                   {location.pathname === "/dashboard/reports" && "Reports"}
                   {location.pathname === "/dashboard/profile" && "Profile"}
-                  {location.pathname.includes("/dashboard/farm/") && "Farm Details"}
+                  {location.pathname.includes("/dashboard/farm/") && !location.pathname.includes("edit") && "Farm Details"}
                   {location.pathname.includes("/dashboard/add-farm") && "Add Farm"}
+                  {location.pathname.includes("/dashboard/edit-farm") && "Edit Farm"}
                   {location.pathname.includes("/dashboard/add-crop") && "Add Crop"}
-                  {location.pathname.includes("/dashboard/recommendation") && "AI Recommendation"}
+                  {location.pathname.includes("/dashboard/edit-crop") && "Edit Crop"}
+                  {location.pathname.includes("/dashboard/recommend") && "AI Recommendation"}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1 hidden sm:block">
                   {location.pathname === "/dashboard" && "Monitor your farms and get AI-powered insights"}
@@ -181,12 +185,7 @@ export function DashboardLayout() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-destructive border-2 border-white">
-                  3
-                </Badge>
-              </button>
+              {/* Notification icon removed */}
             </div>
           </div>
         </header>

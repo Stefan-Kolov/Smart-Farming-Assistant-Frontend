@@ -10,6 +10,21 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { login, register } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 
+// Password must have at least 1 uppercase, 1 lowercase, 1 digit, 1 special character, min 8 chars
+function validatePassword(password: string): string | null {
+  if (password.length < 8)
+    return "Password must be at least 8 characters long.";
+  if (!/[A-Z]/.test(password))
+    return "Password must contain at least one uppercase letter.";
+  if (!/[a-z]/.test(password))
+    return "Password must contain at least one lowercase letter.";
+  if (!/[0-9]/.test(password))
+    return "Password must contain at least one number.";
+  if (!/[^A-Za-z0-9]/.test(password))
+    return "Password must contain at least one special character (e.g. !@#$%).";
+  return null;
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
@@ -35,8 +50,9 @@ export function LoginPage() {
       await login({ username: loginUsername, password: loginPassword });
       await refreshUser();
       navigate("/dashboard");
-    } catch (err: unknown) {
-      setLoginError(err instanceof Error ? err.message : "Login failed. Check your credentials.");
+    } catch {
+      // Never reveal which field is wrong
+      setLoginError("Incorrect email or password.");
     } finally {
       setLoginLoading(false);
     }
@@ -45,6 +61,21 @@ export function LoginPage() {
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     setRegisterError("");
+
+    // Client-side email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(registerEmail)) {
+      setRegisterError("Please enter a valid email address (e.g. user@example.com).");
+      return;
+    }
+
+    // Client-side password validation
+    const pwError = validatePassword(registerPassword);
+    if (pwError) {
+      setRegisterError(pwError);
+      return;
+    }
+
     setRegisterLoading(true);
     try {
       await register({
