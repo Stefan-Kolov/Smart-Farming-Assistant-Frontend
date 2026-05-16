@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, Droplets, Leaf, AlertTriangle, Calendar, Thermometer, CloudRain, Droplet, Loader2 } from "lucide-react";
+import {
+  ArrowLeft, Leaf, AlertTriangle, Thermometer, CloudRain, Droplet,
+  Loader2, Droplets, Sprout, ShieldAlert,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -29,6 +32,32 @@ const getPriorityColor = (priority: Priority) => {
   }
 };
 
+/** Split raw recommendation text (newline or pipe separated) into irrigation, fertilization, and risk lines */
+function parseRecommendationSections(text: string) {
+  // Handle both AI (newlines) and rule-based (pipes) output formats
+  const lines = text.split(/\n|\|/).map((l) => l.trim()).filter(Boolean);
+
+  const irrigation: string[] = [];
+  const fertilization: string[] = [];
+  const risks: string[] = [];
+  const general: string[] = [];
+
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (/irrigat|watering|water\b|moisture|rainfall|precipit|flood|drought|drip|sprinkler/.test(lower)) {
+      irrigation.push(line);
+    } else if (/fertil|nutrient|nitrogen|phosphor|potassium|npk|compost|organic|soil amendment|manure|supplement/.test(lower)) {
+      fertilization.push(line);
+    } else if (/risk|disease|pest|fungal|blight|mildew|infestation|aphid|frost|heat stress|danger|warning|caution|monitor|protect|severe|critical/.test(lower)) {
+      risks.push(line);
+    } else {
+      general.push(line);
+    }
+  }
+
+  return { irrigation, fertilization, risks, general };
+}
+
 export function RecommendationPage() {
   const { farmId, cropId } = useParams();
   const navigate = useNavigate();
@@ -51,7 +80,6 @@ export function RecommendationPage() {
       setFarmName(farm.name);
       setCropName(crop.name);
 
-      // Geocode the farm location to get lat/lon
       const geoResults = await geocode({ name: farm.location, count: 1 });
       if (!geoResults.length) throw new Error(`Could not geocode location: ${farm.location}`);
       const { latitude, longitude } = geoResults[0];
@@ -100,9 +128,8 @@ export function RecommendationPage() {
     : recommendation.recommendation?.toLowerCase().includes('low') ? 'LOW'
     : 'MEDIUM') as Priority;
 
-  // Parse recommendation text into sections
   const recText = recommendation.recommendation || '';
-  const lines = recText.split('\n').filter(Boolean);
+  const { irrigation, fertilization, risks, general } = parseRecommendationSections(recText);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -140,24 +167,107 @@ export function RecommendationPage() {
         </Alert>
       )}
 
-      {/* Main Recommendation */}
-      <Card className="border-green-200 bg-green-50/50">
-        <CardHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
-              <Leaf className="w-6 h-6 text-white" />
+      {/* General / Overview card */}
+      {general.length > 0 && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
+                <Leaf className="w-6 h-6 text-white" />
+              </div>
+              <CardTitle className="text-lg">General Farming Advice</CardTitle>
             </div>
-            <CardTitle className="text-lg">Farming Recommendation</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {lines.map((line, i) => (
-              <p key={i} className="text-gray-700 leading-relaxed">{line}</p>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {general.map((line, i) => (
+                <p key={i} className="text-gray-700 leading-relaxed">{line}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 3 Specialty Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Irrigation – Blue */}
+        <Card className="border-blue-200 bg-blue-50/40">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                <Droplets className="w-5 h-5 text-white" />
+              </div>
+              <CardTitle className="text-base text-blue-800">Irrigation</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {irrigation.length > 0 ? (
+              <ul className="space-y-2">
+                {irrigation.map((line, i) => (
+                  <li key={i} className="text-sm text-blue-900 leading-relaxed flex gap-2">
+                    <span className="text-blue-400 mt-1 flex-shrink-0">•</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-blue-700/60 italic">No specific irrigation adjustments needed.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Fertilization – Amber/Brown */}
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center flex-shrink-0">
+                <Sprout className="w-5 h-5 text-white" />
+              </div>
+              <CardTitle className="text-base text-amber-800">Fertilization</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {fertilization.length > 0 ? (
+              <ul className="space-y-2">
+                {fertilization.map((line, i) => (
+                  <li key={i} className="text-sm text-amber-900 leading-relaxed flex gap-2">
+                    <span className="text-amber-500 mt-1 flex-shrink-0">•</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-amber-700/60 italic">No specific fertilization changes recommended.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Risks – Red */}
+        <Card className="border-red-200 bg-red-50/40">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                <ShieldAlert className="w-5 h-5 text-white" />
+              </div>
+              <CardTitle className="text-base text-red-800">Risks & Alerts</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {risks.length > 0 ? (
+              <ul className="space-y-2">
+                {risks.map((line, i) => (
+                  <li key={i} className="text-sm text-red-900 leading-relaxed flex gap-2">
+                    <span className="text-red-400 mt-1 flex-shrink-0">•</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-red-700/60 italic">No significant risks detected.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Weather at time of recommendation */}
       {recommendation.weather && (
