@@ -15,22 +15,8 @@ interface FarmWithWeather extends FarmDto {
 }
 
 const FARM_COLORS = [
-  "#16a34a",
-  "#0ea5e9",
-  "#f97316",
-  "#8b5cf6",
-  "#ec4899",
-  "#eab308",
-  "#14b8a6",
-  "#ef4444",
-  "#2563eb",
-  "#4d7c0f",
-  "#db2777",
-  "#7c2d12",
-  "#059669",
-  "#6366f1",
-  "#b45309", 
-  "#0284c7"
+  "#16a34a", "#0ea5e9", "#f97316", "#8b5cf6", "#ec4899", "#eab308", "#14b8a6", "#ef4444",
+  "#2563eb", "#4d7c0f", "#db2777", "#7c2d12", "#059669", "#6366f1", "#b45309", "#0284c7"
 ];
 
 export function DashboardPage() {
@@ -60,7 +46,8 @@ export function DashboardPage() {
                   rainfall: Math.round(weather.precipitation),
                 },
               };
-            } catch {
+            } catch (err) {
+              console.error(`Error fetching current weather for ${farm.name}:`, err);
               return { ...farm, weather: null };
             }
           })
@@ -72,38 +59,47 @@ export function DashboardPage() {
       await Promise.all(
           farmList.map(async (farm) => {
             try {
-              let records: WeatherRecord[] = await getFarmWeatherRecords(farm.id);
+              let records: WeatherRecord[] = [];
+              try {
+                records = await getFarmWeatherRecords(farm.id);
+              } catch (e) {
+                console.warn(`Backend returned no weather records for farm ${farm.id}, falling back to Open-Meteo.`);
+              }
 
               if (!records || records.length === 0) {
-                const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(farm.location)}&count=1&language=en&format=json`;
-                const geoRes = await fetch(geocodeUrl);
-                const geoData = await geoRes.json();
+                try {
+                  const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(farm.location)}&count=1&language=en&format=json`;
+                  const geoRes = await fetch(geocodeUrl);
 
-                if (!geoData.results || geoData.results.length === 0) {
-                  console.error(`Не се пронајдени координати за локацијата: ${farm.location}`);
-                  return;
-                }
+                  if (!geoRes.ok) throw new Error("Geocoding API error");
+                  const geoData = await geoRes.json();
 
-                const { latitude: lat, longitude: lon } = geoData.results[0];
-                const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&past_days=7&forecast_days=0`;
-                const res = await fetch(openMeteoUrl);
-                const openMeteoData = await res.json();
+                  if (geoData?.results && geoData.results.length > 0) {
+                    const { latitude: lat, longitude: lon } = geoData.results[0];
+                    const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&past_days=7&forecast_days=0`;
 
-                if (openMeteoData.hourly) {
-                  openMeteoData.hourly.time.forEach((timeStr: string, idx: number) => {
-                    if (timeStr.includes("T12:00")) {
-                      const dateObj = new Date(timeStr);
-                      const formattedDate = dateObj.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
+                    const res = await fetch(openMeteoUrl);
+                    if (!res.ok) throw new Error("Forecast API error");
+                    const openMeteoData = await res.json();
+
+                    if (openMeteoData?.hourly) {
+                      openMeteoData.hourly.time.forEach((timeStr: string, idx: number) => {
+                        if (timeStr.includes("T12:00")) {
+                          const dateObj = new Date(timeStr);
+                          const formattedDate = dateObj.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          });
+
+                          if (!dateMap[formattedDate]) dateMap[formattedDate] = {};
+                          dateMap[formattedDate][`temp_${farm.id}`] = Math.round(openMeteoData.hourly.temperature_2m[idx]);
+                          dateMap[formattedDate][`humidity_${farm.id}`] = Math.round(openMeteoData.hourly.relative_humidity_2m[idx]);
+                        }
                       });
-
-                      if (!dateMap[formattedDate]) dateMap[formattedDate] = {};
-
-                      dateMap[formattedDate][`temp_${farm.id}`] = Math.round(openMeteoData.hourly.temperature_2m[idx]);
-                      dateMap[formattedDate][`humidity_${farm.id}`] = Math.round(openMeteoData.hourly.relative_humidity_2m[idx]);
                     }
-                  });
+                  }
+                } catch (externalErr) {
+                  console.error(`CORS or network restriction from Open-Meteo for ${farm.location}:`, externalErr);
                 }
               } else {
                 for (const r of records.slice(-7)) {
@@ -117,7 +113,7 @@ export function DashboardPage() {
                 }
               }
             } catch (err) {
-              console.error(`Грешка при влечење историја за фарма ${farm.name}:`, err);
+              console.error(`Error processing weather history for farm ${farm.name}:`, err);
             }
           })
       );
@@ -157,7 +153,7 @@ export function DashboardPage() {
   return (
       <div className="space-y-6">
         {/* Temperature and Humidity Chart  */}
-        {farms.length > 0 && (
+        {farms.length > 0 && chartData.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="pb-2">
