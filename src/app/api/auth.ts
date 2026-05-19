@@ -1,5 +1,13 @@
 import { apiClient, setToken } from './client';
 
+export interface UpdateProfileRequest {
+  username: string;
+  name: string;
+  surname: string;
+  email: string;
+  password?: string;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -33,4 +41,17 @@ export async function register(data: RegisterRequest): Promise<UserProfile> {
 
 export async function getMe(): Promise<UserProfile> {
   return apiClient.get<UserProfile>('/api/user/me');
+}
+
+export interface UpdateProfileResponse {
+  message: string;
+  user: UserProfile;
+  token: string;
+}
+
+export async function updateProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+  const res = await apiClient.put<UpdateProfileResponse>('/api/user/me', data);
+  // The backend issues a new token after profile changes (e.g. username rename)
+  if (res.token) setToken(res.token);
+  return res;
 }
