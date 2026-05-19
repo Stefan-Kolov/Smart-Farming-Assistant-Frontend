@@ -15,9 +15,7 @@ export function DashboardLayout() {
   const email = user?.email ?? '';
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", id: "dashboard" },
     { icon: Sprout, label: "Farms", path: "/dashboard", id: "farms" },
-    { icon: Brain, label: "AI Insights", path: "/dashboard", id: "ai-insights" },
     { icon: FileText, label: "Reports", path: "/dashboard/reports", id: "reports" },
     { icon: User, label: "Profile", path: "/dashboard/profile", id: "profile" },
   ];
