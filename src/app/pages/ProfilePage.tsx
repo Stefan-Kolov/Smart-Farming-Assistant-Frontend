@@ -373,7 +373,7 @@ export function ProfilePage() {
       {/* ── Security section hint ────────────────────────────────────────── */}
       {!editing && (
         <Card className="border-gray-200">
-          <CardHeader className="text-center py-8">
+          <CardHeader className="text-center pt-8 pb-14">
             <CardTitle className="flex items-center justify-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
               Password
